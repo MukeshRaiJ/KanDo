@@ -4,6 +4,8 @@ import { SortableContext, useSortable } from "@dnd-kit/sortable";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -14,6 +16,9 @@ import {
   Calendar,
   AlertCircle,
   CheckCircle,
+  Pencil,
+  X,
+  Check,
 } from "lucide-react";
 import {
   Tooltip,
@@ -82,9 +87,20 @@ const getStatusIcon = (status?: string) => {
 interface KanbanItemProps {
   task: Task;
   onDelete: (taskId: string) => void;
+  onEdit: (taskId: string, updatedTask: Partial<Task>) => void;
 }
 
-const KanbanItem = ({ task, onDelete }: KanbanItemProps) => {
+const KanbanItem = ({ task, onDelete, onEdit }: KanbanItemProps) => {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editedTask, setEditedTask] = React.useState({
+    title: task.title,
+    content: task.content,
+    priority: task.priority,
+    dueDate: task.dueDate,
+    tags: task.tags || [],
+    status: task.status,
+  });
+
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id: task.id,
@@ -97,6 +113,23 @@ const KanbanItem = ({ task, onDelete }: KanbanItemProps) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  const handleSave = () => {
+    onEdit(task.id, editedTask);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedTask({
+      title: task.title,
+      content: task.content,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      tags: task.tags || [],
+      status: task.status,
+    });
+    setIsEditing(false);
   };
 
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
@@ -124,126 +157,252 @@ const KanbanItem = ({ task, onDelete }: KanbanItemProps) => {
         } group backdrop-blur-sm bg-white/90 dark:bg-gray-800/90`}
       >
         <CardContent className="p-4">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h3 className="font-medium text-sm mb-2 text-gray-900 dark:text-gray-100">
-                {task.title}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                {task.content}
-              </p>
+          {isEditing ? (
+            <div className="space-y-3">
+              <Input
+                value={editedTask.title}
+                onChange={(e) =>
+                  setEditedTask({ ...editedTask, title: e.target.value })
+                }
+                className="border-amber-200 dark:border-amber-800"
+                placeholder="Task title"
+              />
+              <Textarea
+                value={editedTask.content}
+                onChange={(e) =>
+                  setEditedTask({ ...editedTask, content: e.target.value })
+                }
+                className="border-amber-200 dark:border-amber-800 min-h-[60px]"
+                placeholder="Task description"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={editedTask.priority}
+                  onChange={(e) =>
+                    setEditedTask({
+                      ...editedTask,
+                      priority: e.target.value as "low" | "medium" | "high",
+                    })
+                  }
+                  className="w-full border rounded-md p-2 text-sm border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-800"
+                >
+                  <option value="">Select Priority</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                <select
+                  value={editedTask.status}
+                  onChange={(e) =>
+                    setEditedTask({
+                      ...editedTask,
+                      status: e.target.value as
+                        | "blocked"
+                        | "in-review"
+                        | "completed",
+                    })
+                  }
+                  className="w-full border rounded-md p-2 text-sm border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-800"
+                >
+                  <option value="">Select Status</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="in-review">In Review</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <Input
+                type="date"
+                value={
+                  editedTask.dueDate
+                    ? new Date(editedTask.dueDate).toISOString().split("T")[0]
+                    : ""
+                }
+                onChange={(e) =>
+                  setEditedTask({
+                    ...editedTask,
+                    dueDate: new Date(e.target.value),
+                  })
+                }
+                className="border-amber-200 dark:border-amber-800"
+              />
+              <Input
+                value={editedTask.tags?.join(", ")}
+                onChange={(e) =>
+                  setEditedTask({
+                    ...editedTask,
+                    tags: e.target.value
+                      .split(",")
+                      .map((tag) => tag.trim())
+                      .filter(Boolean),
+                  })
+                }
+                placeholder="Tags (comma separated)"
+                className="border-amber-200 dark:border-amber-800"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSave}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  size="sm"
+                >
+                  <Check className="h-4 w-4 mr-1" /> Save
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-200 dark:border-amber-800"
+                >
+                  <X className="h-4 w-4 mr-1" /> Cancel
+                </Button>
+              </div>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity -mt-1 -mr-2 h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(task.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Archive task</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2 items-center">
-            {task.priority && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="secondary"
-                      className={`text-xs flex items-center gap-1 ${getPriorityColor(
-                        task.priority
-                      )}`}
-                    >
-                      <Flag className="h-3 w-3" />
-                      {task.priority}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Task priority</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {task.dueDate && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="secondary"
-                      className={`text-xs flex items-center gap-1 ${
-                        isOverdue
-                          ? "bg-red-100 text-red-500 dark:bg-red-900/20"
-                          : "bg-amber-100 text-amber-500 dark:bg-amber-900/20"
-                      }`}
-                    >
-                      <Calendar className="h-3 w-3" />
-                      {new Date(task.dueDate).toLocaleDateString()}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isOverdue ? "Overdue" : "Due date"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {task.status && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="secondary"
-                      className={`text-xs flex items-center gap-1 ${getStatusColor(
-                        task.status
-                      )}`}
-                    >
-                      {getStatusIcon(task.status)}
-                      {task.status.replace("-", " ")}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Task status</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            {task.tags && task.tags.length > 0 && (
-              <div className="flex gap-1 flex-wrap">
-                {task.tags.map((tag, index) => (
-                  <TooltipProvider key={index}>
+          ) : (
+            <>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="font-medium text-sm mb-2 text-gray-900 dark:text-gray-100">
+                    {task.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                    {task.content}
+                  </p>
+                </div>
+                <div className="flex">
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          variant="outline"
-                          className="text-xs flex items-center gap-1 border-amber-200 dark:border-amber-800"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity -mt-1 -mr-2 h-8 w-8 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditing(true);
+                          }}
                         >
-                          <Tag className="h-3 w-3 text-amber-500" />
-                          {tag}
-                        </Badge>
+                          <Pencil className="h-4 w-4 text-amber-500" />
+                        </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Tag</p>
+                        <p>Edit task</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                ))}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity -mt-1 -mr-2 h-8 w-8 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(task.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Archive task</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="mt-3 flex flex-wrap gap-2 items-center">
+                {task.priority && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs flex items-center gap-1 ${getPriorityColor(
+                            task.priority
+                          )}`}
+                        >
+                          <Flag className="h-3 w-3" />
+                          {task.priority}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Task priority</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
+                {task.dueDate && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs flex items-center gap-1 ${
+                            isOverdue
+                              ? "bg-red-100 text-red-500 dark:bg-red-900/20"
+                              : "bg-amber-100 text-amber-500 dark:bg-amber-900/20"
+                          }`}
+                        >
+                          <Calendar className="h-3 w-3" />
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isOverdue ? "Overdue" : "Due date"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
+                {task.status && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs flex items-center gap-1 ${getStatusColor(
+                            task.status
+                          )}`}
+                        >
+                          {getStatusIcon(task.status)}
+                          {task.status.replace("-", " ")}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Task status</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+
+                {task.tags && task.tags.length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {task.tags.map((tag, index) => (
+                      <TooltipProvider key={index}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className="text-xs flex items-center gap-1 border-amber-200 dark:border-amber-800"
+                            >
+                              <Tag className="h-3 w-3 text-amber-500" />
+                              {tag}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Tag</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -253,9 +412,14 @@ const KanbanItem = ({ task, onDelete }: KanbanItemProps) => {
 interface KanbanColumnProps {
   column: Column;
   onDeleteTask: (taskId: string) => void;
+  onEditTask: (taskId: string, updatedTask: Partial<Task>) => void;
 }
 
-const KanbanColumn = ({ column, onDeleteTask }: KanbanColumnProps) => {
+const KanbanColumn = ({
+  column,
+  onDeleteTask,
+  onEditTask,
+}: KanbanColumnProps) => {
   const { setNodeRef } = useDroppable({
     id: column.id,
     data: {
@@ -290,7 +454,12 @@ const KanbanColumn = ({ column, onDeleteTask }: KanbanColumnProps) => {
         <SortableContext items={column.items.map((item) => item.id)}>
           <AnimatePresence>
             {column.items.map((task) => (
-              <KanbanItem key={task.id} task={task} onDelete={onDeleteTask} />
+              <KanbanItem
+                key={task.id}
+                task={task}
+                onDelete={onDeleteTask}
+                onEdit={onEditTask}
+              />
             ))}
           </AnimatePresence>
         </SortableContext>
@@ -313,9 +482,14 @@ const KanbanColumn = ({ column, onDeleteTask }: KanbanColumnProps) => {
 interface KanbanBoardProps {
   columns: Column[];
   onDeleteTask: (taskId: string) => void;
+  onEditTask: (taskId: string, updatedTask: Partial<Task>) => void;
 }
 
-const KanbanBoard = ({ columns, onDeleteTask }: KanbanBoardProps) => {
+const KanbanBoard = ({
+  columns,
+  onDeleteTask,
+  onEditTask,
+}: KanbanBoardProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
       {columns.map((column) => (
@@ -323,6 +497,7 @@ const KanbanBoard = ({ columns, onDeleteTask }: KanbanBoardProps) => {
           key={column.id}
           column={column}
           onDeleteTask={onDeleteTask}
+          onEditTask={onEditTask}
         />
       ))}
     </div>
