@@ -155,11 +155,37 @@ export default function KanbanWorkspace() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      // Clear any local state
+      setColumns([
+        {
+          id: "todo",
+          title: "To Do",
+          items: [],
+          icon: <ClipboardList className="w-5 h-5 text-amber-500" />,
+        },
+        {
+          id: "inProgress",
+          title: "In Progress",
+          items: [],
+          icon: <Clock className="w-5 h-5 text-amber-500" />,
+        },
+        {
+          id: "done",
+          title: "Done",
+          items: [],
+          icon: <CheckCircle className="w-5 h-5 text-amber-500" />,
+        },
+      ]);
+      setNotes([]);
+      setArchivedTasks([]);
+
+      // Use replace instead of push to prevent back navigation
+      router.replace("/");
+
       toast({
         title: "Success",
         description: "Signed out successfully",
       });
-      router.push("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
       toast({

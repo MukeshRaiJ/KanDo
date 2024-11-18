@@ -18,21 +18,26 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-sm backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-amber-200 dark:border-amber-800">
-        <CardContent className="pt-8 pb-6 px-6 space-y-6">
-          <div className="space-y-2 text-center">
+      <Card className="w-96 h-96 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-amber-200 dark:border-amber-800">
+        <CardContent className="h-full flex flex-col justify-center pt-8 pb-6 px-6 space-y-6">
+          <div className="space-y-4 text-center">
             <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-amber-700 dark:from-amber-400 dark:to-amber-600">
               ✨ KanDo
             </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Your all-in-one productivity suite with Kanban boards and
+              note-taking capabilities.
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500">
+              Currently supporting Google authentication only
+            </p>
           </div>
-
           {error && (
             <Alert variant="destructive" className="animate-in fade-in">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <Button
             className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white transition-all duration-300"
             onClick={signInWithGoogle}
